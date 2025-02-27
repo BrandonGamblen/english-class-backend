@@ -1,0 +1,1 @@
+mongodb+srv://teacher:Teach123!@englishlessons.et2pt.mongodb.net/?retryWrites=true&w=majority&appName=EnglishLessons
