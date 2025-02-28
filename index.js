@@ -12,6 +12,20 @@ if (!URI) {
 
 const client = new MongoClient(URI);
 
+// Function to ensure MongoDB is connected
+async function ensureConnected() {
+    try {
+        if (!client.topology || !client.topology.isConnected()) {
+            await client.connect();
+            console.log('Reconnected to MongoDB');
+        }
+    } catch (err) {
+        console.error('Failed to connect to MongoDB:', err);
+        throw err;
+    }
+}
+
+// Initial connection
 async function connectDB() {
     try {
         await client.connect();
@@ -30,6 +44,7 @@ connectDB().then(() => {
     app.post('/submit-answers', async (req, res) => {
         const { studentName, classId, answers } = req.body;
         try {
+            await ensureConnected();
             const db = client.db('englishLessons');
             await db.collection('submissions').insertOne({
                 studentName,
@@ -52,6 +67,7 @@ connectDB().then(() => {
             return res.status(401).send('Unauthorized');
         }
         try {
+            await ensureConnected();
             const db = client.db('englishLessons');
             const submissions = await db.collection('submissions').find().toArray();
             res.json(submissions);
@@ -68,6 +84,7 @@ connectDB().then(() => {
         }
         const { submissionId, grade } = req.body;
         try {
+            await ensureConnected();
             const db = client.db('englishLessons');
             const result = await db.collection('submissions').updateOne(
                 { _id: new ObjectId(submissionId) },
@@ -90,6 +107,7 @@ connectDB().then(() => {
             return res.status(400).send('Student name required');
         }
         try {
+            await ensureConnected();
             const db = client.db('englishLessons');
             const grades = await db.collection('submissions')
                 .find({ studentName })
