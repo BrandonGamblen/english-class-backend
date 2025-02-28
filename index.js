@@ -10,9 +10,13 @@ if (!URI) {
     process.exit(1);
 }
 
-const client = new MongoClient(URI);
+// Specify TLS options for MongoDB client
+const client = new MongoClient(URI, {
+    tls: true,
+    tlsAllowInvalidCertificates: false, // Ensure valid certificates
+    minTLSVersion: 'TLSv1.2' // Enforce TLS 1.2 or higher
+});
 
-// Function to ensure MongoDB is connected
 async function ensureConnected() {
     try {
         if (!client.topology || !client.topology.isConnected()) {
@@ -25,7 +29,6 @@ async function ensureConnected() {
     }
 }
 
-// Initial connection
 async function connectDB() {
     try {
         await client.connect();
