@@ -12,7 +12,7 @@ if (!URI) {
 
 const client = new MongoClient(URI, {
     tls: true,
-    minTLSVersion: 'TLSv1.2'
+    minTlsVersion: 'TLSv1.2'
 });
 
 async function ensureConnected() {
