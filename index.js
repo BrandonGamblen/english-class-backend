@@ -12,18 +12,21 @@ if (!URI) {
 
 const client = new MongoClient(URI, {
     tls: true,
-    minTLSVersion: 'TLSv1.2' // Enforce TLS 1.2+
+    minTLSVersion: 'TLSv1.2'
 });
 
 async function ensureConnected() {
     try {
         if (!client.topology || !client.topology.isConnected()) {
+            console.log('Attempting to reconnect to MongoDB...');
             await client.connect();
             console.log('Reconnected to MongoDB');
         }
+        return true;
     } catch (err) {
         console.error('Failed to connect to MongoDB:', err);
-        throw err;
+        await new Promise(resolve => setTimeout(resolve, 5000));
+        return false;
     }
 }
 
@@ -32,20 +35,29 @@ async function connectDB() {
         await client.connect();
         console.log('Connected to MongoDB');
     } catch (err) {
-        console.error('MongoDB connection error:', err);
-        process.exit(1);
+        console.error('Initial MongoDB connection error:', err);
+        await new Promise(resolve => setTimeout(resolve, 5000));
+        await connectDB();
     }
 }
 
+process.on('uncaughtException', (err) => {
+    console.error('Uncaught Exception:', err);
+});
+
 connectDB().then(() => {
     app.get('/', (req, res) => {
+        console.log('Handling GET /');
         res.send('Hello, this is your English class server!');
     });
 
     app.post('/submit-answers', async (req, res) => {
+        console.log('Handling POST /submit-answers');
         const { studentName, classId, answers } = req.body;
         try {
-            await ensureConnected();
+            if (!await ensureConnected()) {
+                throw new Error('Database not connected');
+            }
             const db = client.db('englishLessons');
             await db.collection('submissions').insertOne({
                 studentName,
@@ -63,14 +75,18 @@ connectDB().then(() => {
     });
 
     app.get('/teacher', async (req, res) => {
+        console.log('Handling GET /teacher');
         const password = req.query.password;
         if (password !== 'Teach2025') {
             return res.status(401).send('Unauthorized');
         }
         try {
-            await ensureConnected();
+            if (!await ensureConnected()) {
+                throw new Error('Database not connected');
+            }
             const db = client.db('englishLessons');
             const submissions = await db.collection('submissions').find().toArray();
+            console.log('Fetched submissions:', submissions.length);
             res.json(submissions);
         } catch (err) {
             console.error('Error fetching submissions:', err);
@@ -79,13 +95,16 @@ connectDB().then(() => {
     });
 
     app.post('/teacher/mark', async (req, res) => {
+        console.log('Handling POST /teacher/mark');
         const password = req.query.password;
         if (password !== 'Teach2025') {
             return res.status(401).send('Unauthorized');
         }
         const { submissionId, grade } = req.body;
         try {
-            await ensureConnected();
+            if (!await ensureConnected()) {
+                throw new Error('Database not connected');
+            }
             const db = client.db('englishLessons');
             const result = await db.collection('submissions').updateOne(
                 { _id: new ObjectId(submissionId) },
@@ -103,16 +122,20 @@ connectDB().then(() => {
     });
 
     app.get('/grades', async (req, res) => {
+        console.log('Handling GET /grades');
         const { studentName } = req.query;
         if (!studentName) {
             return res.status(400).send('Student name required');
         }
         try {
-            await ensureConnected();
+            if (!await ensureConnected()) {
+                throw new Error('Database not connected');
+            }
             const db = client.db('englishLessons');
             const grades = await db.collection('submissions')
                 .find({ studentName })
                 .toArray();
+            console.log(`Fetched ${grades.length} grades for ${studentName}`);
             res.json(grades);
         } catch (err) {
             console.error('Error fetching grades:', err);
@@ -120,10 +143,10 @@ connectDB().then(() => {
         }
     });
 
-    app.listen(process.env.PORT || 3000, () => {
-        console.log(`Server running on port ${process.env.PORT || 3000}`);
+    app.listen(process.env.PORT || 10000, () => {
+        console.log(`Server running on port ${process.env.PORT || 10000}`);
     });
-}).catch(() => {
-    console.error('Failed to connect to MongoDB, server not started');
-    process.exit(1);
+}).catch(err => {
+    console.error('Fatal startup error:', err);
+    setTimeout(connectDB, 5000);
 });
