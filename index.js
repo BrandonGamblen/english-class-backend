@@ -10,11 +10,9 @@ if (!URI) {
     process.exit(1);
 }
 
-// Specify TLS options for MongoDB client
 const client = new MongoClient(URI, {
     tls: true,
-    tlsAllowInvalidCertificates: false, // Ensure valid certificates
-    minTLSVersion: 'TLSv1.2' // Enforce TLS 1.2 or higher
+    minTLSVersion: 'TLSv1.2' // Enforce TLS 1.2+
 });
 
 async function ensureConnected() {
