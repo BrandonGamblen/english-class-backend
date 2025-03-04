@@ -10,7 +10,9 @@ if (!URI) {
     process.exit(1);
 }
 
-const client = new MongoClient(URI); // Simplified—no options
+const TEACHER_PASSWORD = process.env.TEACHER_PASSWORD || 'Teach2025'; // Fallback for local testing
+
+const client = new MongoClient(URI);
 
 async function ensureConnected() {
     try {
@@ -38,7 +40,6 @@ async function connectDB() {
     }
 }
 
-// Rest of your code unchanged...
 process.on('uncaughtException', (err) => {
     console.error('Uncaught Exception:', err);
 });
@@ -75,7 +76,7 @@ connectDB().then(() => {
     app.get('/teacher', async (req, res) => {
         console.log('Handling GET /teacher');
         const password = req.query.password;
-        if (password !== 'Teach2025') {
+        if (password !== TEACHER_PASSWORD) { // Updated to use env variable
             return res.status(401).send('Unauthorized');
         }
         try {
@@ -95,7 +96,7 @@ connectDB().then(() => {
     app.post('/teacher/mark', async (req, res) => {
         console.log('Handling POST /teacher/mark');
         const password = req.query.password;
-        if (password !== 'Teach2025') {
+        if (password !== TEACHER_PASSWORD) { // Updated to use env variable
             return res.status(401).send('Unauthorized');
         }
         const { submissionId, grade } = req.body;
