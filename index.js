@@ -1,4 +1,3 @@
-// Forced update for Render
 const express = require('express');
 const { MongoClient, ObjectId } = require('mongodb');
 const app = express();
@@ -11,10 +10,7 @@ if (!URI) {
     process.exit(1);
 }
 
-const client = new MongoClient(URI, {
-    tls: true,
-    minTlsVersion: 'TLSv1.2' // Fixed typo: minTLSVersion -> minTlsVersion
-});
+const client = new MongoClient(URI); // Simplified—no options
 
 async function ensureConnected() {
     try {
@@ -42,6 +38,7 @@ async function connectDB() {
     }
 }
 
+// Rest of your code unchanged...
 process.on('uncaughtException', (err) => {
     console.error('Uncaught Exception:', err);
 });
