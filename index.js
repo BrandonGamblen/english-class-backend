@@ -1,3 +1,4 @@
+// Forced update for Render
 const express = require('express');
 const { MongoClient, ObjectId } = require('mongodb');
 const app = express();
@@ -12,7 +13,7 @@ if (!URI) {
 
 const client = new MongoClient(URI, {
     tls: true,
-    minTlsVersion: 'TLSv1.2'
+    minTlsVersion: 'TLSv1.2' // Fixed typo: minTLSVersion -> minTlsVersion
 });
 
 async function ensureConnected() {
