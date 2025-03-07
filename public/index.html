@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>English Class</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .hidden { display: none; }
+        button { margin: 5px; padding: 5px 10px; }
+    </style>
+</head>
+<body>
+    <h1>English Class</h1>
+    
+    <!-- Login Section -->
+    <div id="login-section">
+        <input id="username" placeholder="Username" required>
+        <input id="password" type="password" placeholder="Password" required>
+        <button onclick="login()">Login</button>
+        <p id="login-error" class="hidden" style="color: red;"></p>
+    </div>
+
+    <!-- Classes Section -->
+    <div id="classes-section" class="hidden">
+        <h2>Your Classes</h2>
+        <div id="classes-list"></div>
+        <button onclick="logout()">Logout</button>
+    </div>
+
+    <!-- Lessons Section -->
+    <div id="lessons-section" class="hidden">
+        <h2 id="class-title"></h2>
+        <div id="lessons-list"></div>
+        <button onclick="backToClasses()">Back to Classes</button>
+    </div>
+
+    <!-- Lesson Detail Section -->
+    <div id="lesson-detail-section" class="hidden">
+        <h2 id="lesson-title"></h2>
+        <p id="lesson-content"></p>
+        <form id="answers-form"></form>
+        <button onclick="submitAnswers()">Submit Answers</button>
+        <button onclick="backToLessons()">Back to Lessons</button>
+    </div>
+
+    <script>
+        const API_URL = 'https://www.classicenglish.ca';
+        let currentClassId = null;
+
+        function showSection(sectionId) {
+            document.querySelectorAll('div[id$="-section"]').forEach(div => div.classList.add('hidden'));
+            document.getElementById(sectionId).classList.remove('hidden');
+        }
+
+        async function login() {
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+            try {
+                const res = await fetch(`${API_URL}/login`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username, password })
+                });
+                if (!res.ok) throw new Error('Login failed');
+                const { token } = await res.json();
+                localStorage.setItem('token', token);
+                document.getElementById('login-error').classList.add('hidden');
+                loadClasses();
+            } catch (err) {
+                document.getElementById('login-error').textContent = err.message;
+                document.getElementById('login-error').classList.remove('hidden');
+            }
+        }
+
+        async function loadClasses() {
+            try {
+                const res = await fetch(`${API_URL}/classes`, {
+                    headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
+                });
+                if (!res.ok) throw new Error('Failed to fetch classes');
+                const classes = await res.json();
+                const list = document.getElementById('classes-list');
+                list.innerHTML = classes.map(c => 
+                    `<button onclick="loadLessons('${c.classId}', '${c.name}')">${c.name}</button>`
+                ).join('');
+                showSection('classes-section');
+            } catch (err) {
+                logout();
+            }
+        }
+
+        async function loadLessons(classId, className) {
+            currentClassId = classId;
+            document.getElementById('class-title').textContent = className;
+            try {
+                const res = await fetch(`${API_URL}/classes/${classId}/lessons`, {
+                    headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
+                });
+                if (!res.ok) throw new Error('Failed to fetch lessons');
+                const lessons = await res.json();
+                const list = document.getElementById('lessons-list');
+                list.innerHTML = lessons.map(l => 
+                    `<button onclick="loadLesson('${l._id}', '${l.title}', '${l.content}', '${JSON.stringify(l.questions)}')">${l.title}</button>`
+                ).join('');
+                showSection('lessons-section');
+            } catch (err) {
+                console.error(err);
+            }
+        }
+
+        function loadLesson(lessonId, title, content, questionsJson) {
+            const questions = JSON.parse(questionsJson);
+            document.getElementById('lesson-title').textContent = title;
+            document.getElementById('lesson-content').textContent = content;
+            const form = document.getElementById('answers-form');
+            form.innerHTML = questions.map((q, i) => 
+                `<label>${q.question}</label><br><textarea name="answer${i}" required></textarea><br>`
+            ).join('');
+            form.dataset.lessonId = lessonId;
+            showSection('lesson-detail-section');
+        }
+
+        async function submitAnswers() {
+            const form = document.getElementById('answers-form');
+            const answers = Array.from(form.elements)
+                .filter(el => el.name.startsWith('answer'))
+                .map(el => el.value);
+            try {
+                const res = await fetch(`${API_URL}/submit-answers`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${localStorage.getItem('token')}`
+                    },
+                    body: JSON.stringify({
+                        classId: currentClassId,
+                        lessonId: form.dataset.lessonId,
+                        answers
+                    })
+                });
+                if (!res.ok) throw new Error('Failed to submit answers');
+                alert('Answers submitted!');
+                backToLessons();
+            } catch (err) {
+                console.error(err);
+            }
+        }
+
+        function backToClasses() {
+            showSection('classes-section');
+        }
+
+        function backToLessons() {
+            loadLessons(currentClassId, document.getElementById('class-title').textContent);
+        }
+
+        function logout() {
+            localStorage.removeItem('token');
+            showSection('login-section');
+        }
+
+        if (localStorage.getItem('token')) loadClasses();
+    </script>
+</body>
+</html>
