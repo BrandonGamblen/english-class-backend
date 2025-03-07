@@ -1,1 +1,13 @@
 mongodb+srv://teacher:Teach123!@englishlessons.et2pt.mongodb.net/?retryWrites=true&w=majority&appName=EnglishLessons
+
+DNS records:
+dns1.p04.nsone.net
+dns2.p04.nsone.net
+dns3.p04.nsone.net
+dns4.p04.nsone.net
+
+CNAME Record
+www.classicalenglishlessons.netlify.app.
+
+Website Tools:
+MongoDB, Github, Render, nodejs.org, netlify, Namecheap, 
