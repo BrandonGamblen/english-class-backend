@@ -192,37 +192,8 @@ connectDB().then(() => {
         }
     });
 
-    async function addTestData() {
-        const db = client.db('englishLessons');
-        const hashedStudent = bcrypt.hashSync('pass123', 10);
-        const hashedTeacher = bcrypt.hashSync('Teach2025', 10);
-        const student = await db.collection('users').insertOne({
-            username: 'student1',
-            password: hashedStudent,
-            role: 'student'
-        });
-        const teacher = await db.collection('users').insertOne({
-            username: 'teacher1',
-            password: hashedTeacher,
-            role: 'teacher'
-        });
-        const classDoc = await db.collection('classes').insertOne({
-            classId: 'Class1',
-            name: 'English 101',
-            students: [student.insertedId]
-        });
-        await db.collection('lessons').insertOne({
-            classId: 'Class1',
-            title: 'Lesson 1: Intro',
-            content: 'Welcome to English class!',
-            questions: [{ question: 'What’s your name?' }]
-        });
-        console.log('Test data added');
-    }
-
     app.listen(process.env.PORT || 10000, () => {
         console.log(`Server running on port ${process.env.PORT || 10000}`);
-        addTestData(); // Runs once on startup
     });
 }).catch(err => {
     console.error('Fatal startup error:', err);
